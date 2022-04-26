@@ -6,7 +6,7 @@ const PORT = 3000;
 const app = express();
 app.use(express.json());
 
-const privateKey = 'q1W2e3R4t5Y6u7I8';
+const privateKey = '1';
 
 const promisifiedVerify = async (token, key) => {
   return new Promise((resolve, reject) => {
