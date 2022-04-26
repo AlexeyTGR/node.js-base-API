@@ -1,6 +1,8 @@
 {
   "development": {
-
+    "username": "fusion_tech",
+    "password": "fusion",
+    "database": "studydb",
     "host": "127.0.0.1",
     "dialect": "postgres"
   }
