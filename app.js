@@ -1,12 +1,41 @@
 const express = require('express');
 const { User } = require('./models');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
+const crypto = require('crypto');
 
 const PORT = 3000;
 const app = express();
 app.use(express.json());
 
-const privateKey = '1';
+const privateKey = '';
+
+const hashPassword = async (password) => {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      resolve(salt + ':' + derivedKey.toString('hex'))
+    });
+  });
+};
+
+const verifyPassword = async (password, hash) => {
+  return new Promise((resolve, reject) => {
+    const [salt, key] = hash.split(':');
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      resolve(key === derivedKey.toString('hex'))
+    });
+  });
+};
+
+const run = async () => {
+  const testPassword = await hashPassword('q1w2e3r4');
+  const testResult = await verifyPassword('q1w2e3r4', testPassword);
+  console.log('testResult >>>>>', testResult);
+}
 
 const promisifiedVerify = async (token, key) => {
   return new Promise((resolve, reject) => {
@@ -39,30 +68,28 @@ const checkToken = async (req, res, next) => {
     const result = await promisifiedVerify(token, privateKey);
     const admin = await isAdmin(result.id);
 
-    if (admin) {
-      console.log('admin ???????', admin);
-      return next()
-    };
+    if (admin) { return next() };
 
     if (req.params.id) {
       if (result.id !== +req.params.id) {
-        return res.status(403).json('you are not allowed to access this data')
+        return res.status(403).json({ message: 'you are not allowed to access this data' })
       }
       return next();
     }
+    return res.status(403).json({ message: 'you are not allowed to access this data' })
   }
 }
 
 app.get('/users', checkToken, async (req, res) => {
 
-  const users = await User.findAll();
+  const users = await User.findAll({ attributes: { exclude: ['password'] } });
   res.json(users);
 });
 
 app.get('/users/:id', checkToken, async (req, res) => {
   const userId = req.params.id;
   try {
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(userId, { attributes: { exclude: ['password'] } });
     return res.status(200).json(user);
   } catch (error) {
     console.error('get user Id error:', error);
@@ -81,18 +108,26 @@ app.post('/signup', async (req, res) => {
     dateOfBirth
   } = req.body;
 
+  const hashedPassword = await hashPassword(password);
+
+  if (!validator.isEmail(email)) {
+    return res.status(406).json({ message: 'Wrong email' })
+  }
+
   const newUser = {
     role: 'user',
     firstName: firstName,
     lastName: lastName,
     email: email,
-    password: password,
+    password: hashedPassword,
     dateOfBirth: dateOfBirth,
   };
 
   try {
     const result = await User.create(newUser);
     const token = jwt.sign({ id: result.id }, privateKey);
+    delete result.dataValues.password;
+
     return res.json({
       result,
       token
@@ -107,12 +142,18 @@ app.get('/signin', async (req, res) => {
   if (!req.body) { return res.sendStatus(400) };
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ where: { email: email } })
+    const user = await User.findOne({where: { email: email }});
+
     if (!user) {
       return res.status(404).json('User with this email not found')
-    }
-    if (user.password === password) {
+    };
 
+    const varifyPasswords = await verifyPassword(password, user.password);
+
+    delete user.dataValues.password;
+    
+    if (varifyPasswords) {
+      
       const token = jwt.sign({ id: user.id }, privateKey);
       return res.status(200).json({
         message: 'You are signed in',
@@ -120,7 +161,7 @@ app.get('/signin', async (req, res) => {
         token
       });
     } else {
-      return res.status(401).json('Wrong password')
+      return res.status(401).json({ message: 'Wrong password' })
     }
   } catch (error) {
     console.error('authentication error:', error);
