@@ -16,10 +16,10 @@ exports.getUser = async (req, res) => {
   };
 };
 
-exports.deleteUser = (req, res) => {
+exports.deleteUser = async (req, res) => {
   const userId = req.params.id;
   try {
-    User.destroy({ where: { id: userId } })
+    await User.destroy({ where: { id: userId } })
     return res.json(`User with id ${userId} deleted`);
   } catch (error) {
     console.error('delete error:', error);
@@ -33,7 +33,10 @@ exports.updateUser = async (req, res) => {
 
   try {
     const isUserExist = await User.findByPk(userId);
-    if (!isUserExist) { return res.status(404).json({ message: 'User is not found' }); }
+    if (!isUserExist) {
+      return res.status(404).json({ message: 'User is not found' });
+    }
+
     if (Object.keys(req.body).includes('password')) {
       const hashedPassword = await hashPassword(req.body.password);
       req.body.password = hashedPassword;

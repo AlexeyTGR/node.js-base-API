@@ -4,7 +4,7 @@ const verifyPassword = require('../utils/verifyPassword')
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
-const privateKey = '';
+const privateKey = 'q1W2e3R4t5Y6u7I8';
 
 exports.signUp = async (req, res) => {
   if (!req.body) { return res.sendStatus(400) };
@@ -50,9 +50,9 @@ exports.signUp = async (req, res) => {
 exports.signIn = async (req, res) => {
   if (!req.body) { return res.sendStatus(400) };
   const { email, password } = req.body;
-  
+
   try {
-    const user = await User.findOne({where: { email: email }});
+    const user = await User.findOne({ where: { email: email } });
 
     if (!user) {
       return res.status(404).json('User with this email not found')
@@ -61,18 +61,17 @@ exports.signIn = async (req, res) => {
     const varifyPasswords = await verifyPassword.verifyPassword(password, user.password);
 
     delete user.dataValues.password;
-    
+
     if (varifyPasswords) {
-      
+
       const token = jwt.sign({ id: user.id }, privateKey);
       return res.status(200).json({
         message: 'You are signed in',
         user,
         token
       });
-    } else {
-      return res.status(401).json({ message: 'Wrong password' })
     }
+    return res.status(401).json({ message: 'Wrong password' })
   } catch (error) {
     console.error('authentication error:', error);
     return res.status(400).json({ message: error.message });
