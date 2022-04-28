@@ -10,6 +10,9 @@ app.use(express.json());
 
 const privateKey = '';
 
+const userRouter = express.Router();
+
+
 const hashPassword = async (password) => {
   return new Promise((resolve, reject) => {
     const salt = crypto.randomBytes(16).toString('hex');
@@ -31,11 +34,6 @@ const verifyPassword = async (password, hash) => {
   });
 };
 
-const run = async () => {
-  const testPassword = await hashPassword('q1w2e3r4');
-  const testResult = await verifyPassword('q1w2e3r4', testPassword);
-  console.log('testResult >>>>>', testResult);
-}
 
 const promisifiedVerify = async (token, key) => {
   return new Promise((resolve, reject) => {
@@ -80,13 +78,13 @@ const checkToken = async (req, res, next) => {
   }
 }
 
-app.get('/users', checkToken, async (req, res) => {
+app.get('/user/all', checkToken, async (req, res) => {
 
   const users = await User.findAll({ attributes: { exclude: ['password'] } });
   res.json(users);
 });
 
-app.get('/users/:id', checkToken, async (req, res) => {
+app.get('/user/:id', checkToken, async (req, res) => {
   const userId = req.params.id;
   try {
     const user = await User.findByPk(userId, { attributes: { exclude: ['password'] } });
@@ -141,6 +139,7 @@ app.post('/signup', async (req, res) => {
 app.get('/signin', async (req, res) => {
   if (!req.body) { return res.sendStatus(400) };
   const { email, password } = req.body;
+  
   try {
     const user = await User.findOne({where: { email: email }});
 
@@ -169,7 +168,7 @@ app.get('/signin', async (req, res) => {
   }
 })
 
-app.delete('/delete/:id', checkToken, (req, res) => {
+app.delete('/user/:id/delete', checkToken, (req, res) => {
   const userId = req.params.id;
   try {
     User.destroy({ where: { id: userId } })
@@ -180,14 +179,18 @@ app.delete('/delete/:id', checkToken, (req, res) => {
   };
 });
 
-app.patch('/update/:id', checkToken, async (req, res) => {
+app.patch('/user/:id/update', checkToken, async (req, res) => {
   if (!req.body) { return res.sendStatus(400); }
   const userId = req.params.id;
 
   try {
     const isUserExist = await User.findByPk(userId);
     if (!isUserExist) { return res.status(404).json({ message: 'User is not found' }); }
-    console.log('req.body', req.body);
+    if (Object.keys(req.body).includes('password')) {
+      const hashedPassword = await hashPassword(req.body.password);
+      req.body.password = hashedPassword;
+    }
+
     const updatedUser = await User.update(req.body, { where: { id: userId } });
     return res.json(updatedUser);
   } catch (error) {
