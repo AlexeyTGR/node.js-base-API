@@ -1,10 +1,9 @@
 const { User } = require('../models');
 const hashPassword = require('../utils/hashPassword');
-const verifyPassword = require('../utils/verifyPassword')
+const verifyPassword = require('../utils/verifyPassword');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
-
-const privateKey = 'q1W2e3R4t5Y6u7I8';
+const privateKey = process.env.PRIVATE_KEY;
 
 exports.signUp = async (req, res) => {
   if (!req.body) { return res.sendStatus(400) };
@@ -20,8 +19,8 @@ exports.signUp = async (req, res) => {
   const hashedPassword = await hashPassword.hashPassword(password);
 
   if (!validator.isEmail(email)) {
-    return res.status(406).json({ message: 'Wrong email' })
-  }
+    return res.status(406).json({ message: 'Wrong email' });
+  };
 
   const newUser = {
     role: 'user',
@@ -55,7 +54,7 @@ exports.signIn = async (req, res) => {
     const user = await User.findOne({ where: { email: email } });
 
     if (!user) {
-      return res.status(404).json('User with this email not found')
+      return res.status(404).json('User with this email not found');
     };
 
     const varifyPasswords = await verifyPassword.verifyPassword(password, user.password);
@@ -71,9 +70,9 @@ exports.signIn = async (req, res) => {
         token
       });
     }
-    return res.status(401).json({ message: 'Wrong password' })
+    return res.status(401).json({ message: 'Wrong password' });
   } catch (error) {
     console.error('authentication error:', error);
     return res.status(400).json({ message: error.message });
-  }
-}
+  };
+};

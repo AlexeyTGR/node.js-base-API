@@ -1,7 +1,7 @@
 const express = require('express');
-const userController = require('../controllers/userController')
+const userController = require('../controllers/userController');
 const userRouter = express.Router();
-const checkToken = require('../utils/checkToken')
+const checkToken = require('../utils/checkToken');
 
 userRouter.get('/all', checkToken.checkToken, userController.getAllUsers);
 

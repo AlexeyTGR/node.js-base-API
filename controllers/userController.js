@@ -1,4 +1,5 @@
 const { User } = require('../models');
+const hashPassword = require('../utils/hashPassword')
 
 exports.getAllUsers = async (req, res) => {
   const users = await User.findAll({ attributes: { exclude: ['password'] } });
@@ -19,7 +20,7 @@ exports.getUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   const userId = req.params.id;
   try {
-    await User.destroy({ where: { id: userId } })
+    await User.destroy({ where: { id: userId } });
     return res.json(`User with id ${userId} deleted`);
   } catch (error) {
     console.error('delete error:', error);
@@ -28,7 +29,7 @@ exports.deleteUser = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-  if (!req.body) { return res.sendStatus(400); }
+  if (!req.body) { return res.sendStatus(400) };
   const userId = req.params.id;
 
   try {
@@ -38,7 +39,7 @@ exports.updateUser = async (req, res) => {
     }
 
     if (Object.keys(req.body).includes('password')) {
-      const hashedPassword = await hashPassword(req.body.password);
+      const hashedPassword = await hashPassword.hashPassword(req.body.password);
       req.body.password = hashedPassword;
     }
 
@@ -46,6 +47,6 @@ exports.updateUser = async (req, res) => {
     return res.json(updatedUser);
   } catch (error) {
     console.error('get user Id error:', error);
-    return res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message });
   };
 };

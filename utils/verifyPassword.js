@@ -5,7 +5,7 @@ module.exports.verifyPassword = async (password, hash) => {
     const [salt, key] = hash.split(':');
     crypto.scrypt(password, salt, 64, (err, derivedKey) => {
       if (err) reject(err);
-      resolve(key === derivedKey.toString('hex'))
+      resolve(key === derivedKey.toString('hex'));
     });
   });
 };
