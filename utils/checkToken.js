@@ -39,4 +39,4 @@ module.exports.checkToken = async (req, res, next) => {
     };
     return res.status(403).json({ message: 'you are not allowed to access this data' });
   };
-};
+}; 

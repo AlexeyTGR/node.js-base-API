@@ -1,14 +1,14 @@
 const express = require('express');
 const userController = require('../controllers/userController');
 const userRouter = express.Router();
-const checkToken = require('../utils/checkToken');
+const { checkToken } = require('../utils/checkToken');
 
-userRouter.get('/all', checkToken.checkToken, userController.getAllUsers);
+userRouter.get('/all', checkToken, userController.getAllUsers);
 
-userRouter.get('/:id', checkToken.checkToken, userController.getUser);
+userRouter.get('/:id', checkToken, userController.getUser);
 
-userRouter.delete('/:id/delete', checkToken.checkToken, userController.deleteUser);
+userRouter.delete('/:id/delete', checkToken, userController.deleteUser);
 
-userRouter.patch('/:id/update', checkToken.checkToken, userController.updateUser);
+userRouter.patch('/:id/update', checkToken, userController.updateUser);
 
 module.exports = userRouter;
