@@ -5,7 +5,6 @@ class CreateError extends Error {
     this.message = message;
   };
 
-
   static notFound(message) {
     return new CreateError(404, message);
   };

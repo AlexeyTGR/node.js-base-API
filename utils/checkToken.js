@@ -2,6 +2,8 @@ require('dotenv').config();
 const db = require('../models');
 const jwt = require('jsonwebtoken');
 const privateKey = process.env.PRIVATE_KEY;
+const { errorHandler } = require('../utils/responseHandler');
+const { forbidden, notFound } = require('../utils/errorCreator');
 
 const promisifiedVerify = async (token, key) => {
   return new Promise((resolve, reject) => {
@@ -13,30 +15,40 @@ const promisifiedVerify = async (token, key) => {
           return reject(err);
         };
         return resolve(decoded);
-      }
+      },
     );
   });
 };
 
 const isAdmin = async (id) => {
-  const user = await db.User.findByPk(id);
-  if (!user) return res.status(404).json('user not found');
-  return user.role === 'admin';
+  try {
+    const user = await db.User.findByPk(id);
+    if (!user) { throw notFound('user not found') };
+
+    return user.role === 'admin';
+  } catch (error) {
+    errorHandler(res, error.code, error.message);
+  };
 };
 
 module.exports.checkToken = async (req, res, next) => {
-  const token = req.headers?.authorization || null;
-  if (token) {
-    const result = await promisifiedVerify(token, privateKey);
-    const admin = await isAdmin(result.id);
-    if (admin) { return next() };
+  try {
+    const token = req.headers?.authorization || null;
+    if (token) {
+      const result = await promisifiedVerify(token, privateKey);
+      const admin = await isAdmin(result.id);
+      if (admin) { return next() };
 
-    if (req.params.id) {
-      if (result.id !== +req.params.id) {
-        return res.status(403).json({ message: 'you are not allowed to access this data' });
+      if (req.params.id) {
+        if (result.id !== +req.params.id) {
+          throw forbidden('you are not allowed to access this data');
+        };
+        return next();
       };
-      return next();
+      throw forbidden('you are not allowed to access this data');
     };
-    return res.status(403).json({ message: 'you are not allowed to access this data' });
+  } catch (error) {
+    console.error('check token error:', error);
+    errorHandler(res, error.code, error.message);
   };
-}; 
+};
