@@ -3,7 +3,6 @@ const { badRequest } = require('../utils/errorCreator');
 const { errorHandler } = require('../utils/responseHandler');
 
 module.exports.validator = async (req, res, next) => {
-  console.log('path >>>>>>', req.route.path);
   try {
     if (Object.keys(req.body).length === 0) {
       throw badRequest('bad request');
@@ -18,7 +17,6 @@ module.exports.validator = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    console.error('valitadion error:', error);
     errorHandler(res, error.code, error.message);
   };
 };

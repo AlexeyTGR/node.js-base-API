@@ -1,21 +1,22 @@
 require('dotenv').config();
-const db = require('../models');
 const jwt = require('jsonwebtoken');
-const privateKey = process.env.PRIVATE_KEY;
+const db = require('../models');
 const { errorHandler } = require('../utils/responseHandler');
 const { forbidden, notFound } = require('../utils/errorCreator');
+
+const privateKey = process.env.PRIVATE_KEY;
 
 const promisifiedVerify = async (token, key) => {
   return new Promise((resolve, reject) => {
     jwt.verify(
-      token.split(' ')[1],
+      token,
       key,
       (err, decoded) => {
         if (err) {
           return reject(err);
         };
         return resolve(decoded);
-      },
+      }
     );
   });
 };
@@ -33,8 +34,9 @@ const isAdmin = async (id) => {
 
 module.exports.checkToken = async (req, res, next) => {
   try {
-    const token = req.headers?.authorization || null;
-    if (token) {
+    const bearerToken = req.headers?.authorization || null;
+    if (bearerToken) {
+      const token = bearerToken.split(' ')[1]
       const result = await promisifiedVerify(token, privateKey);
       const admin = await isAdmin(result.id);
       if (admin) { return next() };
@@ -45,10 +47,10 @@ module.exports.checkToken = async (req, res, next) => {
         };
         return next();
       };
+
       throw forbidden('you are not allowed to access this data');
     };
   } catch (error) {
-    console.error('check token error:', error);
     errorHandler(res, error.code, error.message);
   };
 };

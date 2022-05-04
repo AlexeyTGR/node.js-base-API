@@ -39,7 +39,6 @@ exports.signUp = async (req, res) => {
 
     responseHandler(res, 'Welcome, friend!', result, token);
   } catch (error) {
-    console.error('registration error:', error);
     errorHandler(res, error.code, error.message);
   };
 };
@@ -62,7 +61,6 @@ exports.signIn = async (req, res) => {
     const token = jwt.sign({ id: user.id }, privateKey);
     responseHandler(res, 'You are signed in', user, token);
   } catch (error) {
-    console.error('authentication error:', error);
     errorHandler(res, error.code, error.message);
   };
 };
