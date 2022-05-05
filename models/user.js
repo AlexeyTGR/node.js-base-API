@@ -8,7 +8,10 @@ module.exports = (sequelize, DataTypes) => {
     email: DataTypes.STRING,
     password: DataTypes.STRING,
     dateOfBirth: DataTypes.DATEONLY,
-  }, {});
+  }, {  
+    defaultScope: {
+    attributes: { exclude: ['password'] }
+  }});
 
   return User;
 };

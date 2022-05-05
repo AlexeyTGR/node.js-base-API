@@ -9,91 +9,58 @@ exports.getAllUsers = async (req, res) => {
   try {
     const page = req.query.page;
     const limit = req.query.limit;
-    const sortParams = req.query.sort;
-    const filterValue = req.query.filter || '';
-    
+    const filterValue = req.query.filter;
     const filterDate = req.query.date;
-    const initialDate = dayjs('0001-01-01');
-    // const initialDate = new Date('0000-01-01').getTime();
-    const timeDifference = 1000 * 60 * 60 * 24;
-    let usersToShow = null;
-    let order = 'id';
-    let orderDirection = 'ASC';
-    console.log('initialDate', initialDate);
-    // console.log('filterDate', filterDate);
-
-    switch (sortParams) {
-      case 'firstname':
-        order = 'firstName';
-        break;
-      case 'firstnamerev':
-        order = 'firstName';
-        orderDirection = 'DESC';
-        break;
-      case 'lastname':
-        order = 'lastName';
-        break;
-      case 'lastnamerev':
-        order = 'lastName';
-        orderDirection = 'DESC';
-        break;
-      case 'dob':
-        order = 'dateOfBirth';
-      case 'dobrev':
-        order = 'dateOfBirth';
-        orderDirection = 'DESC';
-      default:
-        break;
+    let order = req.query.order || 'id';
+    let orderDirection = req.query.orderDir || 'ASC';
+    const offset = limit * (page - 1) || 0;
+    const attributes = {
+      where: {},
+      order: [[order, orderDirection]],
+      offset: offset,
+      limit: limit,
     };
 
-    const users = await User.findAll({
-      where: {
-        [Op.or]: [
-          {
-            firstName: { [Op.iLike]: `%${filterValue}%` }
-          },
-          {
-            lastName: { [Op.iLike]: `%${filterValue}%` }
-          },
-          {
-            email: { [Op.iLike]: `%${filterValue}%` }
-          },
-        ],
-        dateOfBirth: {
-          [Op.gt]: initialDate
-          // [Op.or]: {
-          //   [Op.gt]: '01-01-01',
-          //   [Op.between]: [filterDate, filterDate + timeDifference]
-          // }
-        }
-      },
-      attributes: {
-        exclude: ['password'],
-      },
-      order: [[order, orderDirection]]
-    });
+    if (filterValue) {
+      const stringForSearch = `%${filterValue}%`;
+      const searchRequest = {
+        [Op.iLike]: stringForSearch
+      };
+      const columnToSearch = [
+        {
+          firstName: searchRequest
+        },
+        {
+          lastName: searchRequest
+        },
+        {
+          email: searchRequest
+        },
+      ];
+
+      attributes.where = {
+        [Op.or]: columnToSearch
+      };
+    };
+
+    if (filterDate) {
+      const startOfDay = dayjs(filterDate).startOf('day');
+      const endOfDay = startOfDay.clone().endOf('day');
+      const searchingValues = {
+        [Op.between]: [startOfDay.toDate(), endOfDay.toDate()]
+      };
+
+      attributes.where['dateOfBirth'] = searchingValues;
+    };
+
+    const users = await User.findAll(attributes);
 
     if (!users || users.length === 0) {
       throw notFound('users not found');
     };
 
-    let usersArray = Array.from(users);
-
-    if (page) {
-      if ((page < 1) || (page > usersArray.length / limit + 1)) {
-        throw badRequest('Wrong request params');
-      };
-      const startIndex = (page - 1) * limit;
-      const endIndex = page * limit;
-      usersToShow = usersArray.slice(startIndex, endIndex);
-    } else {
-      usersToShow = usersArray;
-    };
-
-
-    responseHandler(res, 'All users list:', usersToShow);
+    responseHandler(res, 'All users list:', users);
   } catch (error) {
-    console.error('>>>>>>>>>>>>>>>>>', error)
     errorHandler(res, error.code, error.message);
   };
 };
