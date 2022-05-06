@@ -1,6 +1,6 @@
 const validation = require('validator');
 const { badRequest } = require('../utils/errorCreator');
-const { errorHandler } = require('../utils/responseHandler');
+const { responseHandler } = require('../utils/responseHandler');
 
 module.exports.validator = async (req, res, next) => {
   try {
@@ -16,6 +16,6 @@ module.exports.validator = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    errorHandler(res, error.code, error.message);
+    responseHandler(res, error.code, 'Error: can not check email');
   };
 };

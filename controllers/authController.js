@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { verifyPassword } = require('../utils/verifyPassword');
 const { notFound, forbidden, unauthorized } = require('../utils/errorCreator');
-const { responseHandler, errorHandler } = require('../utils/responseHandler');
+const { responseHandler } = require('../utils/responseHandler');
 const privateKey = process.env.PRIVATE_KEY;
 
 exports.signUp = async (req, res) => {
@@ -31,22 +31,21 @@ exports.signUp = async (req, res) => {
     let createdUser = await User.create(newUser);
     createdUser = createdUser.toJSON();
     delete createdUser.password;
-    if (!createdUser) { throw notFound('Something going wrong...') };
+    if (!createdUser) {
+      throw notFound('Something going wrong...');
+    };
     const token = jwt.sign({ id: createdUser.id }, privateKey);
 
-    responseHandler(res, 'Welcome, friend!', createdUser, token);
+    responseHandler(res, 200, 'Welcome, friend!', { createdUser, token });
   } catch (error) {
-    console.error(error);
-    errorHandler(res, error.code, error.message);
+    responseHandler(res, error.code, 'registration error');
   };
 };
 
 exports.signIn = async (req, res) => {
   try {
     const { email, password } = req.body;
-    let user = await User.scope('withPassword').findOne({
-      where: { email }
-    });
+    let user = await User.scope('withPassword').findOne({ where: { email } });
     if (!user) {
       throw notFound('User with this email not found');
     };
@@ -57,9 +56,8 @@ exports.signIn = async (req, res) => {
     user = user.toJSON();
     delete user.password;
     const token = jwt.sign({ id: user.id }, privateKey);
-    responseHandler(res, 'You are signed in', user, token);
+    responseHandler(res, 200, 'You are signed in', { user, token });
   } catch (error) {
-    console.error(error);
-    errorHandler(res, error.code, error.message);
+    responseHandler(res, error.code, 'Authorization error');
   };
 };

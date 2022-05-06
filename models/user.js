@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
     role: {
       type: DataTypes.ENUM('user', 'admin'),
-      defaultValue: 'admin'
+      defaultValue: 'admin',
     },
     firstName: DataTypes.STRING,
     lastName: DataTypes.STRING,
@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     dateOfBirth: DataTypes.DATEONLY,
   }, {
     defaultScope: {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
     },
     scopes: {
       withPassword: {
