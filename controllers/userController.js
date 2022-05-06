@@ -1,63 +1,55 @@
-const { User } = require('../models');
 const dayjs = require('dayjs');
+const { Op } = require('sequelize');
+const { User } = require('../models');
 const hashPassword = require('../utils/hashPassword');
 const { notFound, badRequest } = require('../utils/errorCreator');
 const { responseHandler, errorHandler } = require('../utils/responseHandler');
-const { Op } = require('sequelize');
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const page = req.query.page;
-    const limit = req.query.limit;
+    const page = +req.query.page || 1;
+    const limit = +req.query.limit || 100;
     const filterValue = req.query.filter;
     const filterDate = req.query.date;
     let order = req.query.order || 'id';
     let orderDirection = req.query.orderDir || 'ASC';
     const offset = limit * (page - 1) || 0;
-    const attributes = {
+
+    const findAllAttributes = {
       where: {},
       order: [[order, orderDirection]],
-      offset: offset,
-      limit: limit,
+      offset,
+      limit,
     };
 
     if (filterValue) {
-      const stringForSearch = `%${filterValue}%`;
-      const searchRequest = {
-        [Op.iLike]: stringForSearch
+      const searchRequestData = {
+        [Op.iLike]: `%${filterValue}%`
       };
-      const columnToSearch = [
-        {
-          firstName: searchRequest
-        },
-        {
-          lastName: searchRequest
-        },
-        {
-          email: searchRequest
-        },
-      ];
-
-      attributes.where = {
-        [Op.or]: columnToSearch
+      findAllAttributes.where = {
+        [Op.or]: [
+          {
+            firstName: searchRequestData
+          },
+          {
+            lastName: searchRequestData
+          },
+          {
+            email: searchRequestData
+          },
+        ]
       };
     };
 
     if (filterDate) {
       const startOfDay = dayjs(filterDate).startOf('day');
       const endOfDay = startOfDay.clone().endOf('day');
-      const searchingValues = {
+
+      findAllAttributes.where.dateOfBirth = {
         [Op.between]: [startOfDay.toDate(), endOfDay.toDate()]
       };
-
-      attributes.where['dateOfBirth'] = searchingValues;
     };
-
-    const users = await User.findAll(attributes);
-
-    if (!users || users.length === 0) {
-      throw notFound('users not found');
-    };
+    const users = await User.findAll(findAllAttributes);
 
     responseHandler(res, 'All users list:', users);
   } catch (error) {
@@ -68,11 +60,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    if (!userId) {
-      throw badRequest('bad request');
-    };
-
-    const user = await User.findByPk(userId, { attributes: { exclude: ['password'] } });
+    const user = await User.findByPk(userId);
     if (!user) {
       throw notFound('user not found');
     };
@@ -86,14 +74,12 @@ exports.getUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    if (!userId) {
-      throw badRequest('bad request');
-    };
-    const isUserExist = await User.findByPk(userId);
-    if (!isUserExist) {
+    const user = await User.findByPk(userId);
+    if (!user) {
       throw notFound('user not found');
     };
-    await User.destroy({ where: { id: userId } });
+    await user.destroy();
+
     responseHandler(res, `User with id ${userId} deleted`);
   } catch (error) {
     errorHandler(res, error.code, error.message);
@@ -114,8 +100,8 @@ exports.updateUser = async (req, res) => {
       const hashedPassword = await hashPassword.hashPassword(req.body.password);
       req.body.password = hashedPassword;
     };
-    await User.update(req.body, { where: { id: userId } });
-    const updatedUser = await User.findByPk(userId, { attributes: { exclude: ['password'] } });
+    await User.update(req.body, { where: { id: userId }, returns: true });
+    const updatedUser = await User.findByPk(userId);
 
     responseHandler(res, 'user updated', updatedUser);
   } catch (error) {

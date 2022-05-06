@@ -8,4 +8,6 @@ const config = {
   "dialect": "postgres",
 };
 
-module.exports = { config };
+const salt = process.env.SALT;
+
+module.exports = { config, salt };

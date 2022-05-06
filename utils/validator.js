@@ -9,8 +9,7 @@ module.exports.validator = async (req, res, next) => {
     };
 
     if (req.body.email) {
-      const email = req.body.email;
-      if (!validation.isEmail(email)) {
+      if (!validation.isEmail(req.body.email)) {
         throw badRequest('Wrong email');
       };
     };

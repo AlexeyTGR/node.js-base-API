@@ -2,7 +2,6 @@ module.exports.responseHandler = (res, message, payload, token) => {
   return res.status(200).json({
     message: message,
     data: payload,
-    token: token,
   });
 };
 

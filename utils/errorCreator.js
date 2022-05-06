@@ -1,26 +1,15 @@
-class CreateError extends Error {
+class ResponseError extends Error {
   constructor(code, message) {
     super(message);
     this.code = code;
-    this.message = message;
-  };
-
-  static notFound(message) {
-    return new CreateError(404, message);
-  };
-
-  static badRequest(message) {
-    return new CreateError(400, message);
-  };
-
-  static unauthorized(message) {
-    return new CreateError(401, message);
-  };
-
-  static forbidden(message) {
-    return new CreateError(403, message);
   };
 };
 
-module.exports = CreateError;
+// module.exports = CreateError;
+module.exports = {
+  notFound: (message) => new ResponseError(404, message),
+  badRequest: (message) => new ResponseError(400, message),
+  unauthorized: (message) => new ResponseError(401, message),
+  forbidden: (message) => new ResponseError(403, message),
+};
 
